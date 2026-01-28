@@ -1,0 +1,11 @@
+{
+  "name": "Research-Lab-Env",
+  "description": "Ubuntu environment with Python and R for data analysis.",
+  "operatingSystem": "24.04",
+  "softwareRequirements": ["python3-pip", "r-base", "git", "htop"],
+  "runtimePlatform": {
+    "cpus": 2,
+    "memory": "4G",
+    "disk": "20G"
+  }
+}

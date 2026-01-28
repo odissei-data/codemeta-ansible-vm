@@ -1,0 +1,10 @@
+vm_settings:
+  name: "mac-dev-box"
+  cpus: 2
+  memory: "4G"
+  disk: "20G"
+  image: "22.04" # Ubuntu version
+  cloud_init: |
+    packages:
+      - git
+      - docker.io
