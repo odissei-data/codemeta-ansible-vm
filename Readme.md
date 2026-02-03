@@ -12,6 +12,9 @@ Virtual Research Environments (VREs) are essential for modern data-driven resear
 - Where is the documentation, and how should packages be sequenced during installation?
 - Is there a citable publication or an ORCID associated with the authors?
 
+## SSHOC-NL project aim:
+- Automatic configuration of SANE VMs using information from the Knowledge Graph.
+
 # How to run
 
 Install Multipass to create your VMs locally (Experiments with Macbook):
