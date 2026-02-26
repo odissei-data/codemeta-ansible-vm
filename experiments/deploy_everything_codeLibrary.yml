@@ -1,0 +1,24 @@
+- name: End-to-End Deployment for ODISSEI-code-library
+  hosts: localhost
+  become: true
+  tasks:
+  - name: Update apt cache
+    apt:
+      update_cache: 'yes'
+    when: ansible_os_family == 'Debian'
+  - name: Ensure Git is installed
+    package:
+      name: git
+      state: present
+  - name: Clone ODISSEI-code-library repository
+    git:
+      repo: https://github.com/odissei-data/ODISSEI-code-library
+      dest: /opt/ODISSEI-code-library
+      clone: 'yes'
+      update: 'yes'
+  - name: Install Runtimes and Tools
+    package:
+      name:
+      - Ruby
+      state: present
+    ignore_errors: true

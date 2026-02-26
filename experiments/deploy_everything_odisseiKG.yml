@@ -1,0 +1,29 @@
+- name: End-to-End Deployment for odissei-kg
+  hosts: localhost
+  become: true
+  tasks:
+  - name: Update apt cache
+    apt:
+      update_cache: 'yes'
+    when: ansible_os_family == 'Debian'
+  - name: Ensure Git is installed
+    package:
+      name: git
+      state: present
+  - name: Clone odissei-kg repository
+    git:
+      repo: https://github.com/odissei-data/odissei-kg
+      dest: /opt/odissei-kg
+      clone: 'yes'
+      update: 'yes'
+  - name: Install Runtimes and Tools
+    package:
+      name:
+      - TypeScript
+      - nodejs
+      state: present
+    ignore_errors: true
+  - name: Install NPM dependencies
+    npm:
+      path: /opt/odissei-kg
+      state: present
