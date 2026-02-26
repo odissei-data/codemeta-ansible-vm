@@ -1,0 +1,7 @@
+{
+    "name": "ODISSEI-code-library",
+    "softwareRequirements": [
+        "ruby"
+    ],
+    "allocated_disk": "11G"
+}

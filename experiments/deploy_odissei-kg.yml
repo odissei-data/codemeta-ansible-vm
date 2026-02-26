@@ -1,0 +1,30 @@
+- hosts: localhost
+  become: true
+  tasks:
+  - name: Atualizar APT
+    apt:
+      update_cache: 'yes'
+  - name: "Clonar Reposit\xF3rio"
+    git:
+      repo: https://github.com/odissei-data/odissei-kg
+      dest: /home/ubuntu/odissei-kg
+  - name: Instalar nodejs
+    package:
+      name: nodejs
+      state: present
+    ignore_errors: true
+  - name: Instalar npm
+    package:
+      name: npm
+      state: present
+    ignore_errors: true
+  - name: Instalar typescript
+    package:
+      name: typescript
+      state: present
+    ignore_errors: true
+  - name: Configurar entrada na pasta
+    lineinfile:
+      path: /home/ubuntu/.bashrc
+      line: cd /home/ubuntu/odissei-kg
+      state: present

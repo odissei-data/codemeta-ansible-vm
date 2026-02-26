@@ -1,0 +1,15 @@
+- hosts: localhost
+  become: true
+  tasks:
+  - name: Update apt cache
+    apt:
+      update_cache: 'yes'
+  - name: Install git
+    package:
+      name: git
+      state: present
+    ignore_errors: true
+  - name: Clone the Repository
+    git:
+      repo: https://github.com/firmao/wimu.git
+      dest: /home/ubuntu/wimu

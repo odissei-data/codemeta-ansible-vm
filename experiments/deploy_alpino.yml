@@ -1,0 +1,20 @@
+- hosts: localhost
+  become: true
+  tasks:
+  - name: Atualizar APT
+    apt:
+      update_cache: 'yes'
+  - name: "Clonar Reposit\xF3rio"
+    git:
+      repo: https://github.com/rug-compling/Alpino
+      dest: /home/ubuntu/Alpino
+  - name: Instalar prolog
+    package:
+      name: prolog
+      state: present
+    ignore_errors: true
+  - name: Configurar entrada na pasta
+    lineinfile:
+      path: /home/ubuntu/.bashrc
+      line: cd /home/ubuntu/Alpino
+      state: present
