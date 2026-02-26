@@ -20,16 +20,17 @@ Virtual Research Environments (VREs) are essential for modern data-driven resear
 Install Multipass to create your VMs locally (Experiments with Macbook):
 - `brew install --cask multipass`
 
-Install PyYAML: You'll need this for the Python script to read your configuration. 
+Install PyYAML and requests: You'll need this for the Python script to read your configuration. 
 - `pip install pyyaml`
+- `pip install requests`
 
 Execution
-- `python run_vm_rocrate.py`
+- `python extrac_run.py`
 
-# Ro-Crate experiments
-**run_vm_rocrate.py** creates a **ro-crate-metadata.yaml** file and runs a VM configured by it.
+# Ansible script experiments
+**extrac_run.py** creates a ansible script **deploy.yml** file and runs a VM configured by it.
 
-You can use this ro-crate file to create a vm in other environments; there's no need to be multipass on a MacBook.
+One of the ideas is to use this ansible script file to create a vm in other environments; there's no need to be multipass on a MacBook or another operational system.
 
 # How it Works
 The script leverages macOS's Hypervisor via Multipass. Here is a high-level look at how the layers interact:
@@ -40,9 +41,9 @@ The script leverages macOS's Hypervisor via Multipass. Here is a high-level look
 
 ## Useful Management VM multipass Commands
 Once your script has started the VM, you can manage it from your terminal. Here are some useful commands:
-- **Enter the VM**	`multipass shell research-lab-env`
+- **Enter the VM**	`multipass shell build-box`
 - **Check Status**	`multipass list`
-- **Stop the VM**	`multipass stop research-lab-env`
-- **Delete the VM** `multipass delete --purge research-lab-env`
+- **Stop the VM**	`multipass stop build-box`
+- **Delete the VM** `multipass delete --purge build-box`
 
 
