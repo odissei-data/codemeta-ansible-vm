@@ -1,9 +1,9 @@
 # Bridging the Metadata Gap: Automated VRE Provisioning via Agentic AI and CodeMeta Knowledge Graphs
 
 ## Abstract
-Virtual Research Environments (VREs) are essential for modern data-driven research, yet the manual overhead of configuring these environments remains a significant barrier for researchers in the Social Sciences and Humanities (SSH). This paper proposes a framework within the Macroscope project to automate VRE setup by leveraging Agentic AI for metadata generation. By populating a Knowledge Graph with CodeMeta descriptions generated automatically from software repositories, we enable a machine-readable pipeline that bridges the gap between raw data access and functional, containerized research environments.
+Virtual Research Environments (VREs) are essential for modern data-driven research, yet the manual overhead of configuring these environments remains a significant barrier for researchers in the Social Sciences and Humanities (SSH). The idea is to provide a framework to automate VRE setup by leveraging Agentic AI for metadata generation. By populating a Knowledge Graph with CodeMeta descriptions generated automatically from software repositories, we enable a machine-readable pipeline that bridges the gap between raw data access and functional, containerized research environments.
 
-<img width="1354" height="792" alt="image" src="https://github.com/user-attachments/assets/68db96af-450c-4a53-9e5b-a796d0f04cb2" />
+<img width="1181" height="697" alt="image" src="https://github.com/user-attachments/assets/5cd3b7fa-cdff-479b-a7a8-1d9ebbdd5557" />
 
 ## Question we try to solve:
 - Which tools and versions can manipulate my specific data?
