@@ -23,9 +23,13 @@ Install Multipass to create your VMs locally (Experiments with Macbook):
 Install PyYAML and requests: You'll need this for the Python script to read your configuration. 
 - `pip install pyyaml`
 - `pip install requests`
+- `pip install flask`
 
 Execution
 - `python extrac_run.py`
+
+Web interface
+- `python web.py`
 
 # Ansible script experiments
 **extrac_run.py** creates a ansible script **deploy.yml** file and runs a VM configured by it.
