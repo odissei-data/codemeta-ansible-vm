@@ -1,0 +1,76 @@
+---
+# Author: Jacco van Ossenbruggen
+# ORCID: https://orcid.org/0000-0002-7748-4715
+# License: Apache 2.0
+# Description: Setup for ODISSEI Knowledge Graph (ETL)
+
+- name: Setup ODISSEI Knowledge Graph VM
+  hosts: all
+  become: true
+  vars:
+    repo_url: "https://github.com/odissei-data/odissei-kg.git"
+    dest_dir: "/opt/odissei-kg"
+    node_version: "20.x"
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install system dependencies
+      apt:
+        name:
+          - git
+          - curl
+          - build-essential
+        state: present
+
+    - name: Add NodeSource repository for Node.js
+      shell: |
+        curl -fsSL https://deb.nodesource.com/setup_{{ node_version }} | bash -
+      args:
+        creates: /etc/apt/sources.list.d/nodesource.list
+
+    - name: Install Node.js and NPM
+      apt:
+        name: nodejs
+        state: present
+
+    - name: Ensure destination directory exists
+      file:
+        path: "{{ dest_dir }}"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+
+    - name: Clone the odissei-kg repository
+      git:
+        repo: "{{ repo_url }}"
+        dest: "{{ dest_dir }}"
+        version: main
+        force: yes
+
+    - name: Install global TypeScript
+      npm:
+        name: typescript
+        global: yes
+        state: present
+
+    - name: Install project dependencies
+      npm:
+        path: "{{ dest_dir }}"
+        state: present
+
+    - name: Build the project (TypeScript compilation)
+      command: npm run build
+      args:
+        chdir: "{{ dest_dir }}"
+
+    - name: Create placeholder for .env file
+      copy:
+        content: |
+          # TriplyETL Configuration
+          # TRIPLY_TOKEN=your_token_here
+        dest: "{{ dest_dir }}/.env"
+        force: no
