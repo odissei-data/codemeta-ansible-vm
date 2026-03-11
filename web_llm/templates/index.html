@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ansible Playbook Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen p-8">
+    <div class="max-w-4xl mx-auto">
+        <header class="mb-10">
+            <h1 class="text-4xl font-bold text-blue-400">Ansible Repo-to-VM</h1>
+            <p class="text-gray-400 mt-2">Enter a GitHub URL to generate a custom deployment playbook.</p>
+        </header>
+
+        <div class="bg-gray-800 p-6 rounded-lg shadow-xl mb-8">
+            <div class="flex gap-4">
+                <input type="text" id="repoUrl" placeholder="https://github.com/user/repo" 
+                       class="flex-1 bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:outline-none focus:border-blue-500">
+                <button onclick="generatePlaybook()" id="genBtn"
+                        class="bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded font-semibold transition">
+                    Generate
+                </button>
+            </div>
+        </div>
+
+        <div id="loading" class="hidden text-center py-10">
+            <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-400 mx-auto"></div>
+            <p class="mt-4 text-blue-400">Cloning and Analyzing... please wait.</p>
+        </div>
+
+        <div id="resultContainer" class="hidden">
+            <div class="flex justify-between items-center mb-2">
+                <h3 class="text-lg font-semibold text-green-400">Generated Playbook:</h3>
+                <button onclick="copyToClipboard()" class="text-sm bg-gray-700 px-3 py-1 rounded hover:bg-gray-600">Copy Code</button>
+            </div>
+            <pre id="output" class="bg-black p-6 rounded-lg overflow-x-auto text-sm font-mono border border-gray-700"></pre>
+        </div>
+    </div>
+
+    <script>
+        async function generatePlaybook() {
+            const url = document.getElementById('repoUrl').value;
+            const btn = document.getElementById('genBtn');
+            const loader = document.getElementById('loading');
+            const result = document.getElementById('resultContainer');
+            const output = document.getElementById('output');
+
+            if (!url) return alert("Please enter a URL");
+
+            // UI State
+            btn.disabled = true;
+            loader.classList.remove('hidden');
+            result.classList.add('hidden');
+
+            try {
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: url })
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    alert("Error: " + data.error);
+                } else {
+                    output.textContent = data.yaml;
+                    result.classList.remove('hidden');
+                }
+            } catch (err) {
+                alert("Request failed: " + err);
+            } finally {
+                btn.disabled = false;
+                loader.classList.add('hidden');
+            }
+        }
+
+        function copyToClipboard() {
+            const text = document.getElementById('output').textContent;
+            navigator.clipboard.writeText(text);
+            alert("Copied to clipboard!");
+        }
+    </script>
+</body>
+</html>
