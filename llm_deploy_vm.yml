@@ -1,0 +1,85 @@
+---
+# Author: Gertjan Van Noord
+# License: LGPL-2.1
+# ORCID: https://orcid.org/0000-0001-5564-6341
+
+- name: Setup Alpino Parser VM
+  hosts: all
+  become: yes
+  vars:
+    alpino_home: /opt/Alpino
+    alpino_repo: https://github.com/rug-compling/alpino.git
+    alpino_binary_url: https://www.let.rug.nl/vannoord/alp/Alpino/versions/binary/latest.tar.gz
+
+  tasks:
+    - name: Update apt cache and install system dependencies
+      apt:
+        name:
+          - git
+          - git-lfs
+          - build-essential
+          - wget
+          - tar
+          - swi-prolog
+          - libtcl8.6
+          - libtk8.6
+        state: present
+        update_cache: yes
+
+    - name: Initialize Git LFS
+      command: git lfs install
+      args:
+        creates: /usr/local/bin/git-lfs
+
+    - name: Create Alpino directory
+      file:
+        path: "{{ alpino_home }}"
+        state: directory
+        mode: '0755'
+
+    - name: Clone Alpino repository
+      git:
+        repo: "{{ alpino_repo }}"
+        dest: "{{ alpino_home }}/source"
+        version: master
+
+    - name: Download and extract latest Alpino binary
+      unarchive:
+        src: "{{ alpino_binary_url }}"
+        dest: "{{ alpino_home }}"
+        remote_src: yes
+        extra_opts: [--strip-components=1]
+
+    - name: Set ALPINO_HOME in /etc/environment
+      lineinfile:
+        path: /etc/environment
+        regexp: '^ALPINO_HOME='
+        line: 'ALPINO_HOME="{{ alpino_home }}"'
+
+    - name: Add Alpino bin to system PATH
+      lineinfile:
+        path: /etc/environment
+        regexp: '^PATH="(.*)"'
+        line: 'PATH="\1:{{ alpino_home }}/bin"'
+        backrefs: yes
+
+    - name: Source Alpino environment variables in global bashrc
+      blockinfile:
+        path: /etc/bash.bashrc
+        block: |
+          export ALPINO_HOME={{ alpino_home }}
+          if [ -f $ALPINO_HOME/create_bin/env.sh ]; then
+            . $ALPINO_HOME/create_bin/env.sh
+          fi
+
+    - name: Ensure Alpino binaries are executable
+      file:
+        path: "{{ alpino_home }}/bin/Alpino"
+        mode: '0755'
+
+    - name: Run Git LFS pull in source directory
+      command: git lfs pull
+      args:
+        chdir: "{{ alpino_home }}/source"
+      register: lfs_pull
+      changed_when: "'Downloading' in lfs_pull.stdout"

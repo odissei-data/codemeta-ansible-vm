@@ -8,8 +8,8 @@ from google.genai import types
 
 # Initialize the modern Client
 # It will look for GEMINI_API_KEY in your environment variables
-#client = genai.Client(api_key="AIzaSyAEOfo6k4pntmRwJv-lQeOpjMYjVlUz11U")
-client = genai.Client()
+client = genai.Client(api_key="AIzaSyAEOfo6k4pntmRwJv-lQeOpjMYjVlUz11U")
+#client = genai.Client()
 
 def clone_repo(repo_url, temp_dir):
     if os.path.exists(temp_dir):
@@ -81,9 +81,9 @@ def main(repo_url):
         # Clean output
         clean_yaml = ansible_yaml.replace("```yaml", "").replace("```", "").strip()
         
-        with open("site.yml", "w") as f:
+        with open("llm_deploy_vm.yml", "w") as f:
             f.write(clean_yaml)
-        print("\nSuccessfully generated site.yml")
+        print("\nSuccessfully generated llm_deploy_vm.yml")
         
     finally:
         if os.path.exists(temp_dir):

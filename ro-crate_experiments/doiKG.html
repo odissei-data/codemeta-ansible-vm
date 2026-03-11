@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ODISSEI Research Explorer</title>
+    <style>
+        body { font-family: sans-serif; padding: 25px; max-width: 1100px; margin: auto; background-color: #f9f9f9; }
+        .search-container { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 30px; }
+        input { width: 400px; padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; }
+        button { padding: 12px 24px; background-color: #0062cc; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        button:hover { background-color: #004a9b; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; }
+        th, td { text-align: left; padding: 15px; border-bottom: 1px solid #edf2f7; }
+        th { background-color: #f1f5f9; color: #475569; }
+        .status { color: #64748b; font-size: 0.9em; margin-bottom: 10px; }
+    </style>
+    <script>
+        const endpoint = "https://api.kg.odissei.nl/datasets/odissei/odissei-kg-acceptance/sparql";
+
+        // Load valid DOIs into the datalist on page load
+        async function loadDoiSuggestions() {
+            const suggestQuery = `
+                prefix bibo: <http://purl.org/ontology/bibo/>
+                prefix dct: <http://purl.org/dc/terms/>
+                prefix dcmi: <http://purl.org/dc/dcmitype/>
+                prefix schema: <http://schema.org/>
+                prefix sdo: <https://schema.org/>
+
+                select ?paper ?projectTitle ?software (group_concat(distinct ?shortTitle; separator=", ") as ?dataUsed) where {
+                ?paper sdo:producer ?project .
+                ?paper a bibo:AcademicArticle .
+                ?software sdo:producer ?project .
+                ?software a dcmi:Software .
+                ?software dct:creator ?softwareDeveloper .
+                ?project dct:requires ?datasetHash .
+                ?datasetHash dct:alternative ?shortTitle .
+                ?dataset dct:alternative ?shortTitle .
+                ?dataset a schema:Dataset .   
+                ?project dct:title ?projectTitle .
+                } 
+                group by ?projectTitle ?software ?paper
+                limit 50`;
+            
+            try {
+                const response = await fetch(endpoint + "?query=" + encodeURIComponent(suggestQuery), { 
+                    headers: { 'Accept': 'application/sparql-results+json' } 
+                });
+                const data = await response.json();
+                const datalist = document.getElementById("doiSuggestions");
+                
+                data.results.bindings.forEach(row => {
+                    const option = document.createElement("option");
+                    option.value = row.doi.value;
+                    datalist.appendChild(option);
+                });
+                document.getElementById("loadStatus").innerText = "Suggestions loaded from Graph.";
+            } catch (e) {
+                console.error("Could not load suggestions", e);
+            }
+        }
+
+        async function executeSparqlQuery() {
+            let inputDoi = document.getElementById("doiInput").value.trim();
+            if (!inputDoi) return alert("Please enter a DOI");
+
+            // REMOVE "doi:" prefix if present (case-insensitive)
+            let cleanDoi = inputDoi.replace(/^(https:\/\/doi\.org\/|doi:)/i, "");
+            cleanDoi = cleanDoi.replace(/^doi:/i, "");
+            
+
+            const output = document.getElementById("results");
+            output.innerHTML = "<em>Querying Knowledge Graph for: " + cleanDoi + "...</em>";
+
+            const query = `
+                prefix bibo: <http://purl.org/ontology/bibo/>
+                prefix dct: <http://purl.org/dc/terms/>
+                prefix dcmi: <http://purl.org/dc/dcmitype/>
+                prefix schema: <http://schema.org/>
+                prefix sdo: <https://schema.org/>
+
+                select ?paper ?projectTitle ?software (group_concat(distinct ?shortTitle; separator=", ") as ?dataUsed) where {
+                ?paper sdo:producer ?project .
+                ?paper a bibo:AcademicArticle .
+                ?software sdo:producer ?project .
+                ?software a dcmi:Software .
+                ?software dct:creator ?softwareDeveloper .
+                ?project dct:requires ?datasetHash .
+                ?datasetHash dct:alternative ?shortTitle .
+                ?dataset dct:alternative ?shortTitle .
+                ?dataset a schema:Dataset .   
+                ?project dct:title ?projectTitle .
+                FILTER regex(str(?paper), "${cleanDoi}", "i") .
+            } 
+            group by ?projectTitle ?software ?paper
+            limit 100`;
+            
+            try {
+                const response = await fetch(endpoint + "?query=" + encodeURIComponent(query), { 
+                    headers: { 'Accept': 'application/sparql-results+json' } 
+                });
+                const data = await response.json();
+                displayResults(data.results.bindings);
+            } catch (error) {
+                output.innerHTML = "<p style='color:red;'>Error fetching results.</p>";
+            }
+        }
+
+        function displayResults(results) {
+            const output = document.getElementById("results");
+            if (results.length === 0) {
+                output.innerHTML = "<p>No connections found for this DOI.</p>";
+                return;
+            }
+
+            let html = `<table><thead><tr><th>Project Title</th><th>Software (Code)</th><th>Datasets Used</th></tr></thead><tbody>`;
+            results.forEach(res => {
+                html += `<tr>
+                    <td>${res.projectTitle.value}</td>
+                    <td><a href="${res.software.value}" target="_blank">View Repository</a></td>
+                    <td>${res.dataUsed.value}</td>
+                </tr>`;
+            });
+            html += "</tbody></table>";
+            output.innerHTML = html;
+        }
+
+        window.onload = loadDoiSuggestions;
+    </script>
+</head>
+<body>
+    <h1>ODISSEI Connection Explorer</h1>
+    <div class="search-container">
+        <div id="loadStatus" class="status">Loading valid DOI suggestions...</div>
+        <input type="text" id="doiInput" list="doiSuggestions" placeholder="Select or type a DOI..." value="doi:10.1016/j.lanepe.2023.100749">
+        <datalist id="doiSuggestions"></datalist>
+        <button onclick="executeSparqlQuery()">Find Connections</button>
+    </div>
+
+    <div id="results"></div>
+</body>
+</html>
