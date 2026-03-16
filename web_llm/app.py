@@ -11,7 +11,7 @@ app = Flask(__name__)
 
 # Security: Use an environment variable for the key in production
 # os.environ["GEMINI_API_KEY"] = "YOUR_KEY_HERE"
-client = genai.Client(api_key="AIzaSyAEOfo6k4pntmRwJv-lQeOpjMYjVlUz11U")
+client = genai.Client(api_key="AIzaSyAiz8OCCYIY78Xwlus2vupilOVGVJOt2Vk")
 
 TEMP_DIR = "./temp_repo_scan"
 
