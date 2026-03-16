@@ -17,7 +17,7 @@ SCHEMA = Namespace("https://schema.org/")
 CODEMETA = Namespace("https://doi.org/10.5063/SCHEMA/CODEMETA-2.0#")
 
 # Security: Ensure your token is active at huggingface.co/settings/tokens
-HF_API_TOKEN = os.getenv("HF_API_TOKEN", "YOR_HUGFACE_API_KEY")
+HF_API_TOKEN = os.getenv("HF_API_TOKEN", "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")
 
 # The unified 2026 Router endpoint
 API_URL = "https://router.huggingface.co/v1/chat/completions"

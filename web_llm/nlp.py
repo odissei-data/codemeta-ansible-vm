@@ -7,7 +7,7 @@ app = Flask(__name__)
 
 # --- CONFIGURATION ---
 # Replace with your actual Hugging Face API Token (found in HF Settings -> Access Tokens)
-HF_TOKEN = "YOUR_HUGFACE_API_KEY"
+HF_TOKEN = "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"
 
 API_URL = "https://router.huggingface.co/v1/chat/completions"
 MODEL_ID = "meta-llama/Llama-3.3-70B-Instruct"
