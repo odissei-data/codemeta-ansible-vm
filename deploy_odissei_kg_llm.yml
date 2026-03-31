@@ -1,0 +1,83 @@
+---
+- name: Setup ODISSEI Knowledge Graph VM
+  hosts: all
+  become: yes
+
+  vars:
+    triply_etl_version: "4.11.3"
+    nodejs_version: "18.x"
+    npm_version: "8.x"
+
+  tasks:
+  - name: Update and upgrade apt packages
+    apt:
+      update_cache: yes
+      cache_valid_time: 3600
+    become: yes
+
+  - name: Install dependencies
+    apt:
+      name:
+        - git
+        - curl
+        - build-essential
+        - libssl-dev
+      state: present
+    become: yes
+
+  - name: Install Node.js and npm
+    apt:
+      name:
+        - nodejs
+        - npm
+      state: present
+    become: yes
+
+  - name: Install Triply ETL
+    npm:
+      name: "@triplyetl/etl"
+      version: "{{ triply_etl_version }}"
+      global: yes
+    become: yes
+
+  - name: Clone ODISSEI Knowledge Graph repository
+    git:
+      repo: https://github.com/odissei-data/odissei-kg.git
+      dest: /opt/odissei-kg
+      version: main
+    become: yes
+
+  - name: Install dependencies from package.json
+    npm:
+      path: /opt/odissei-kg
+    become: yes
+
+  - name: Build ODISSEI Knowledge Graph
+    command: npm run build
+    args:
+      chdir: /opt/odissei-kg
+    become: yes
+
+  - name: Configure Triply ETL
+    template:
+      src: templates/triply-etl-config.j2
+      dest: /opt/odissei-kg/triply-etl-config.json
+      mode: '0644'
+    become: yes
+
+  - name: Run ODISSEI Knowledge Graph ETL
+    command: npm run dev
+    args:
+      chdir: /opt/odissei-kg
+    become: yes
+    async: 1000
+    poll: 0
+    ignore_errors: yes
+
+  handlers:
+  - name: restart triply-etl
+    service:
+      name: triply-etl
+      state: restarted
+    become: yes
+    listen: triply-etl restarted
