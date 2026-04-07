@@ -1,34 +1,70 @@
-# Specs: CPU: 2, RAM: 4G, Disk: 15G
-- hosts: localhost
-  become: true
+---
+- name: Odissei Knowledge Graph Deployment
+  hosts: all
+  become: yes
+
   vars:
-    infra_disk: 15GB
-    infra_mem: 4GB
-    infra_cpu: 2
+    odissei_kg_repo: https://github.com/odissei-data/odissei-kg.git
+    odissei_kg_dir: /opt/odissei-kg
+    java_version: 11
+    maven_version: 3.8.6
+
   tasks:
-  - name: Update system cache
+  - name: Update and upgrade apt packages
     apt:
-      update_cache: 'yes'
-  - name: Install git
-    package:
-      name: git
+      update_cache: yes
+      cache_valid_time: 3600
+      upgrade: yes
+
+  - name: Install dependencies
+    apt:
+      name:
+        - git
+        - openjdk-{{ java_version }}-jdk
+        - maven
+        - python3-pip
       state: present
-  - name: 'Ensure system software is installed: nodejs'
-    package:
-      name: nodejs
+
+  - name: Install pip dependencies
+    pip:
+      name:
+        - ansible
       state: present
-    ignore_errors: true
-  - name: 'Ensure system software is installed: npm'
-    package:
-      name: npm
-      state: present
-    ignore_errors: true
-  - name: 'Ensure system software is installed: typescript'
-    package:
-      name: typescript
-      state: present
-    ignore_errors: true
-  - name: Clone odissei-kg
+
+  - name: Clone Odissei Knowledge Graph repository
     git:
-      repo: https://github.com/odissei-data/odissei-kg
-      dest: /home/ubuntu/odissei-kg
+      repo: "{{ odissei_kg_repo }}"
+      dest: "{{ odissei_kg_dir }}"
+      version: main
+      force: yes
+
+  - name: Build Odissei Knowledge Graph
+    shell:
+      cmd: "mvn clean package -DskipTests"
+      chdir: "{{ odissei_kg_dir }}"
+
+  - name: Configure Odissei Knowledge Graph
+    template:
+      src: templates/application.properties.j2
+      dest: "{{ odissei_kg_dir }}/application.properties"
+      mode: '0644'
+    notify: restart odissei-kg
+
+  - name: Create systemd service file
+    template:
+      src: templates/odissei-kg.service.j2
+      dest: /etc/systemd/system/odissei-kg.service
+      mode: '0644'
+    notify: restart odissei-kg
+
+  - name: Enable and start Odissei Knowledge Graph service
+    systemd:
+      name: odissei-kg
+      state: started
+      enabled: yes
+
+  handlers:
+  - name: restart odissei-kg
+    systemd:
+      name: odissei-kg
+      state: restarted
