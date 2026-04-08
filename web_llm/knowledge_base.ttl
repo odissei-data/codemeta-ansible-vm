@@ -1,0 +1,204 @@
+@prefix as: <https://ansible.com/spec/> .
+@prefix sdo: <https://schema.org/> .
+
+<https://github.com/odissei-data/ODISSEI-code-library> a sdo:SoftwareSourceCode ;
+    as:workingPlaybook """---
+- name: ODISSEI Code Library Deployment
+  hosts: all
+  become: yes
+
+  vars:
+    git_repo: https://github.com/odissei-data/ODISSEI-code-library.git
+    git_branch: main
+    project_dir: /opt/odissei-code-library
+
+  tasks:
+  - name: Install dependencies
+    apt:
+      name:
+        - git
+        - python3-pip
+      state: present
+
+  - name: Clone repository
+    git:
+      repo: "{{ git_repo }}"
+      dest: "{{ project_dir }}"
+      version: "{{ git_branch }}"
+      force: yes
+
+  - name: Install Python dependencies
+    pip:
+      requirements: "{{ project_dir }}/requirements.txt"
+
+  - name: Create a Python virtual environment
+    python:
+      executable: python3
+      virtualenv: "{{ project_dir }}/venv"
+
+  - name: Activate the virtual environment and install dependencies
+    shell: |
+      source {{ project_dir }}/venv/bin/activate
+      pip install -r {{ project_dir }}/requirements.txt
+    args:
+      executable: /bin/bash
+
+  - name: Run the application
+    shell: |
+      source {{ project_dir }}/venv/bin/activate
+      python {{ project_dir }}/main.py
+    args:
+      executable: /bin/bash
+      async: 1000
+      poll: 0
+
+  handlers:
+  - name: restart application
+    shell: |
+      source {{ project_dir }}/venv/bin/activate
+      pkill -f "python {{ project_dir }}/main.py"
+      python {{ project_dir }}/main.py
+    args:
+      executable: /bin/bash
+      async: 1000
+      poll: 0""" .
+
+<https://github.com/odissei-data/odissei-kg> a sdo:SoftwareSourceCode ;
+    as:workingPlaybook """---
+- name: Odissei Knowledge Graph Deployment
+  hosts: all
+  become: yes
+
+  vars:
+    odissei_kg_version: "latest"
+    odissei_kg_port: 8000
+    odissei_kg_data_dir: "/var/odissei-kg/data"
+    odissei_kg_config_dir: "/var/odissei-kg/config"
+    odissei_kg_db_name: "odissei_kg"
+    odissei_kg_db_user: "odissei_kg"
+    odissei_kg_db_password: "odissei_kg"
+
+  tasks:
+  - name: Update package cache
+    apt:
+      update_cache: yes
+      cache_valid_time: 3600
+
+  - name: Install dependencies
+    apt:
+      name:
+        - git
+        - python3-pip
+        - python3-dev
+        - libpq-dev
+        - postgresql
+        - postgresql-contrib
+      state: present
+
+  - name: Clone Odissei Knowledge Graph repository
+    git:
+      repo: https://github.com/odissei-data/odissei-kg.git
+      dest: /var/odissei-kg
+      version: "{{ odissei_kg_version }}"
+
+  - name: Install Python dependencies
+    pip:
+      requirements: /var/odissei-kg/requirements.txt
+
+  - name: Create data directory
+    file:
+      path: "{{ odissei_kg_data_dir }}"
+      state: directory
+      mode: '0755'
+
+  - name: Create config directory
+    file:
+      path: "{{ odissei_kg_config_dir }}"
+      state: directory
+      mode: '0755'
+
+  - name: Copy config files
+    template:
+      src: templates/settings.py.j2
+      dest: "{{ odissei_kg_config_dir }}/settings.py"
+      mode: '0644'
+    vars:
+      db_name: "{{ odissei_kg_db_name }}"
+      db_user: "{{ odissei_kg_db_user }}"
+      db_password: "{{ odissei_kg_db_password }}"
+
+  - name: Create database
+    become_user: postgres
+    become_method: sudo
+    shell:
+      cmd: |
+        psql -c "CREATE DATABASE IF NOT EXISTS {{ odissei_kg_db_name }};"
+        psql -c "CREATE ROLE IF NOT EXISTS {{ odissei_kg_db_user }} WITH PASSWORD '{{ odissei_kg_db_password }}';"
+        psql -c "GRANT ALL PRIVILEGES ON DATABASE {{ odissei_kg_db_name }} TO {{ odissei_kg_db_user }};"
+
+  - name: Initialize database
+    shell:
+      cmd: |
+        python /var/odissei-kg/manage.py migrate
+      executable: /bin/bash
+
+  - name: Collect static files
+    shell:
+      cmd: |
+        python /var/odissei-kg/manage.py collectstatic --no-input
+      executable: /bin/bash
+
+  - name: Run Odissei Knowledge Graph
+    shell:
+      cmd: |
+        python /var/odissei-kg/manage.py runserver 0.0.0.0:{{ odissei_kg_port }}
+      executable: /bin/bash
+      async: 1000
+      poll: 0
+
+  - name: Ensure Odissei Knowledge Graph is running
+    wait_for:
+      port: "{{ odissei_kg_port }}"
+      delay: 10
+      timeout: 60
+
+---
+templates/settings.py.j2:
+python
+DEBUG = True
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': '{{ db_name }}',
+        'USER': '{{ db_user }}',
+        'PASSWORD': '{{ db_password }}',
+        'HOST': 'localhost',
+        'PORT': '5432',
+    }
+}
+
+You can run this playbook using the following command:
+bash
+ansible-playbook -i <your_vm_ip>, odissei_kg_playbook.yml
+
+Replace `<your_vm_ip>` with the IP address of your VM.
+
+Note: This playbook assumes a Ubuntu-based system and uses the `apt` package manager. You may need to modify it to fit your specific environment. Additionally, this playbook does not include any error handling or security measures, so you should modify it to fit your production needs.
+
+Also, please note that running a development server in production is not recommended. You should consider using a WSGI server like Gunicorn or uWSGI, and a reverse proxy like Nginx or Apache.
+
+To use this playbook, you will need to have Ansible installed on your machine. You can install it using pip:
+bash
+pip install ansible
+
+You will also need to have a hosts file that contains the IP address of your VM. You can create a hosts file with the following content:
+ini
+[all]
+<your_vm_ip>
+
+Replace `<your_vm_ip>` with the IP address of your VM.
+
+You can then run the playbook using the following command:
+bash
+ansible-playbook -i hosts odissei_kg_playbook.yml""" .
+
