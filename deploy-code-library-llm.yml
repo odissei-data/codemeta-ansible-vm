@@ -1,0 +1,114 @@
+--- 
+- name: ODISSEI Code Library Deployment
+  hosts: all
+  become: yes
+
+  vars:
+    repo_url: https://github.com/odissei-data/ODISSEI-code-library.git
+    repo_dir: /opt/ODISSEI-code-library
+    python_version: 3.9
+
+  tasks:
+  - name: Update and upgrade apt packages
+    apt:
+      update_cache: yes
+      cache_valid_time: 3600
+      upgrade: dist
+
+  - name: Install required packages
+    apt:
+      name:
+        - git
+        - python3
+        - python3-pip
+        - python3-dev
+        - libpq-dev
+        - postgresql
+        - postgresql-contrib
+        - libssl-dev
+        - libffi-dev
+        - build-essential
+      state: present
+
+  - name: Install Python dependencies
+    pip:
+      name:
+        - numpy
+        - pandas
+        - scipy
+        - scikit-learn
+        - matplotlib
+        - seaborn
+        - plotly
+        - dash
+        - dash-core-components
+        - dash-html-components
+        - dash-table
+        - dash-bootstrap-components
+        - Flask
+        - Flask-SQLAlchemy
+        - psycopg2
+      executable: pip3
+
+  - name: Clone ODISSEI-code-library repository
+    git:
+      repo: "{{ repo_url }}"
+      dest: "{{ repo_dir }}"
+      version: main
+      force: yes
+
+  - name: Create Python virtual environment
+    python:
+      executable: python3
+      virtualenv: "{{ repo_dir }}/venv"
+      state: present
+
+  - name: Activate Python virtual environment and install dependencies
+    shell: |
+      source {{ repo_dir }}/venv/bin/activate
+      pip install -r {{ repo_dir }}/requirements.txt
+    args:
+      executable: /bin/bash
+
+  - name: Configure PostgreSQL
+    template:
+      src: templates/pg_hba.conf.j2
+      dest: /etc/postgresql/13/main/pg_hba.conf
+      mode: '0644'
+    notify: restart postgresql
+
+  - name: Restart PostgreSQL
+    service:
+      name: postgresql
+      state: restarted
+      enabled: yes
+
+  handlers:
+  - name: restart postgresql
+    service:
+      name: postgresql
+      state: restarted
+
+  - name: Create PostgreSQL database and user
+    become_user: postgres
+    become_method: sudo
+    shell: |
+      psql -c "CREATE DATABASE odissei;"
+      psql -c "CREATE ROLE odissei WITH PASSWORD 'odissei';"
+      psql -c "GRANT ALL PRIVILEGES ON DATABASE odissei TO odissei;"
+
+  - name: Configure ODISSEI-code-library
+    template:
+      src: templates/config.py.j2
+      dest: "{{ repo_dir }}/config.py"
+      mode: '0644'
+
+  - name: Run ODISSEI-code-library
+    shell: |
+      source {{ repo_dir }}/venv/bin/activate
+      python {{ repo_dir }}/app.py
+    args:
+      executable: /bin/bash
+    async: 1000
+    poll: 0
+    become: no
